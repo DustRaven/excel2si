@@ -1,0 +1,5 @@
+{
+    "company_id": str,
+    "nr": str,
+    "name": str
+}

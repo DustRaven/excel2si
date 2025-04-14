@@ -1,0 +1,10 @@
+# Core dependencies
+pandas>=2.0.0
+PyQt6>=6.5.0
+openpyxl>=3.1.2
+
+# Icons
+pytablericons>=1.0.1
+
+# Packaging
+pyinstaller>=5.13.0

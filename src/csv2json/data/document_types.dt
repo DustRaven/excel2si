@@ -1,0 +1,6 @@
+{
+    "company_id": str,
+    "id": str,
+    "name": str,
+    "credit_note": bool
+}

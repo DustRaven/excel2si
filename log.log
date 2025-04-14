@@ -1,0 +1,24 @@
+2025-04-14 22:21:09,702 - csv2json - INFO - Log file created at: C:\Users\samwu\Documents\CSV2JSON\logs\csv2json_20250414_222109.log
+2025-04-14 22:21:09,702 - csv2json - INFO - CSV2JSON Converter started
+2025-04-14 22:21:09,724 - csv2json - WARNING - Could not find application icon
+2025-04-14 22:21:09,724 - csv2json - INFO - Applied Fusion style to application
+2025-04-14 22:21:09,724 - csv2json - INFO - Theme set to Fusion style
+2025-04-14 22:21:09,724 - csv2json - WARNING - Could not find application icon
+2025-04-14 22:21:09,724 - csv2json - INFO - Initializing main window
+2025-04-14 22:21:09,724 - csv2json - INFO - Set locale to German_Germany.1252
+2025-04-14 22:21:09,733 - csv2json - ERROR - Error loading root elements: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Users\\samwu\\AppData\\Local\\Temp\\_MEI210482\\src\\csv2json\\data'
+Traceback (most recent call last):
+  File "csv2json\gui\components\toolbar.py", line 98, in load_root_elements
+  File "csv2json\data\__init__.py", line 21, in get_datatype_files
+FileNotFoundError: [WinError 3] Das System kann den angegebenen Pfad nicht finden: 'C:\\Users\\samwu\\AppData\\Local\\Temp\\_MEI210482\\src\\csv2json\\data'
+2025-04-14 22:21:09,782 - csv2json - DEBUG - Toolbar created
+2025-04-14 22:21:09,782 - csv2json - DEBUG - Toolbar buttons connected
+2025-04-14 22:21:09,795 - csv2json - DEBUG - Central widget and layout created
+2025-04-14 22:21:09,797 - csv2json - DEBUG - Mapping widget created and added to layout
+2025-04-14 22:21:09,797 - csv2json - WARNING - No root element selected
+2025-04-14 22:21:09,797 - csv2json - INFO - Main window initialization complete
+2025-04-14 22:21:09,797 - csv2json - INFO - Main window created
+2025-04-14 22:21:09,883 - csv2json - INFO - Application window displayed
+2025-04-14 22:21:24,399 - csv2json - INFO - Opening log viewer
+2025-04-14 22:21:24,408 - csv2json - INFO - Log viewer opened
+2025-04-14 22:21:37,173 - csv2json - INFO - Exporting logs
