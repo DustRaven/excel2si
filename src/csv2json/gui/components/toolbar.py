@@ -55,6 +55,9 @@ class MainToolbar(QToolBar):
         self.setMovable(False)
         self.setFloatable(False)
 
+        # Track application state
+        self.has_file_selected = False
+
         # Set icon size to 24x24 pixels for sharper icons
         from PyQt6.QtCore import QSize
         self.setIconSize(QSize(24, 24))
@@ -99,7 +102,29 @@ class MainToolbar(QToolBar):
         self.log_button = log_btn
         self.addWidget(log_btn)
 
+        # Initialize button states
+        self.update_button_states()
+
         logger.debug("Toolbar created")
+
+    def update_button_states(self):
+        """
+        Update button states based on current application state.
+        """
+        # Convert button is enabled only when a file is selected
+        self.convert_button.setEnabled(self.has_file_selected)
+        logger.debug(f"Button states updated: file_selected={self.has_file_selected}")
+
+    def set_file_selected(self, selected):
+        """
+        Set whether a file is selected.
+
+        Args:
+            selected (bool): Whether a file is selected
+        """
+        self.has_file_selected = selected
+        self.update_button_states()
+        logger.debug(f"File selected state updated: {selected}")
 
     def load_root_elements(self):
         """

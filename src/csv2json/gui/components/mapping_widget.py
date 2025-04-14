@@ -57,6 +57,10 @@ class MappingWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+        # Track application state
+        self.has_source_fields = False
+        self.has_mapping = False
+
         # Create the layout
         layout = QVBoxLayout(self)
 
@@ -111,6 +115,9 @@ class MappingWidget(QWidget):
         # Create mapping service
         self.mapping_service = MappingService()
 
+        # Initialize button states
+        self.update_button_states()
+
     def update_theme(self):
         """Update the theme for all child widgets."""
         self.source_container.update_style()
@@ -119,6 +126,24 @@ class MappingWidget(QWidget):
         # Update all chips
         for chip in self.source_container.chips:
             chip.update_style()
+
+    def update_button_states(self):
+        """
+        Update button states based on current application state.
+        """
+        # Auto-map button is enabled only when source fields are loaded
+        self.auto_map_button.setEnabled(self.has_source_fields)
+
+        # Clear button is enabled only when there is a mapping
+        self.clear_button.setEnabled(self.has_mapping)
+
+        # Export button is enabled only when there is a mapping
+        self.export_button.setEnabled(self.has_mapping)
+
+        # Import button is always enabled
+        self.import_button.setEnabled(True)
+
+        logger.debug(f"Button states updated: source_fields={self.has_source_fields}, mapping={self.has_mapping}")
 
     def load_source_fields(self, fields):
         """
@@ -133,6 +158,11 @@ class MappingWidget(QWidget):
         for field in fields:
             chip = self.source_container.add_chip(field)
             self.hidden_chips[field] = chip
+
+        # Update application state
+        self.has_source_fields = len(fields) > 0
+        self.update_button_states()
+
         logger.debug("Source fields loaded as chips")
 
     def load_datatypes(self, datatypes_str):
@@ -181,6 +211,10 @@ class MappingWidget(QWidget):
             if source_field in self.hidden_chips and self.hidden_chips[source_field] is not None:
                 self.hidden_chips[source_field].setVisible(False)
                 logger.debug(f"Hidden chip for mapped field: {source_field}")
+
+        # Update application state
+        self.has_mapping = len(mapping) > 0
+        self.update_button_states()
 
         self.mapping_changed.emit(mapping)
 
@@ -236,6 +270,10 @@ class MappingWidget(QWidget):
                 self.hidden_chips[source_field].setVisible(False)
                 logger.debug(f"Hidden chip for mapped field: {source_field}")
 
+        # Update application state
+        self.has_mapping = len(mapping) > 0
+        self.update_button_states()
+
         logger.info("Auto-mapping completed successfully")
 
     def clear_mapping(self):
@@ -244,6 +282,10 @@ class MappingWidget(QWidget):
         """
         logger.info("Clearing mapping")
         self.mapping_table.clear_mapping()
+
+        # Update application state
+        self.has_mapping = False
+        self.update_button_states()
 
     def get_mapping(self):
         """
@@ -284,6 +326,10 @@ class MappingWidget(QWidget):
         for source_field in mapping.values():
             if source_field in self.hidden_chips and self.hidden_chips[source_field] is not None:
                 self.hidden_chips[source_field].setVisible(False)
+
+        # Update application state
+        self.has_mapping = len(mapping) > 0
+        self.update_button_states()
 
         logger.info("Mapping set successfully")
 

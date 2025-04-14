@@ -153,6 +153,9 @@ class MainWindow(QMainWindow):
         self.selected_file = None
         self.field_mapping = {}
 
+        # Initialize button states
+        self.toolbar.set_file_selected(False)
+
         # Load datatypes for the initial root element
         self.load_datatypes_for_mapping()
         logger.info("Main window initialization complete")
@@ -171,8 +174,9 @@ class MainWindow(QMainWindow):
             self.selected_file = file_path
             self.statusBar().showMessage(f"Selected file: {Path(file_path).name}")
 
-            # Update toolbar status label as well
+            # Update toolbar status label and button states
             self.toolbar.status_label.setText(f"File: {Path(file_path).name}")
+            self.toolbar.set_file_selected(True)
 
             # Load Excel headers for mapping
             self.load_excel_headers(file_path)
@@ -355,8 +359,9 @@ class MainWindow(QMainWindow):
                 self.selected_file = file_path
                 self.statusBar().showMessage(f"Selected file: {Path(file_path).name}")
 
-                # Update toolbar status label as well
+                # Update toolbar status label and button states
                 self.toolbar.status_label.setText(f"File: {Path(file_path).name}")
+                self.toolbar.set_file_selected(True)
 
                 # Load Excel headers for mapping
                 self.load_excel_headers(file_path)
