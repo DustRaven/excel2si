@@ -2,11 +2,12 @@
 Draggable chips component for the CSV2JSON converter.
 """
 
-from PyQt6.QtWidgets import QLabel, QFrame, QHBoxLayout, QSizePolicy
+from PyQt6.QtWidgets import QLabel, QFrame, QSizePolicy
 from PyQt6.QtCore import Qt, QMimeData
 from PyQt6.QtGui import QDrag
 
 from src.csv2json.core.logging import logger
+from src.csv2json.gui.components.flow_layout import FlowLayout
 
 
 class DraggableChip(QLabel):
@@ -17,21 +18,41 @@ class DraggableChip(QLabel):
         super().__init__(text, parent)
         self.update_style()
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+
+        # Enable word wrap for long text
+        self.setWordWrap(True)
+
+        # Set maximum width to prevent overly wide chips
+        self.setMaximumWidth(200)
+
+        # Ensure text is properly displayed with ellipsis if needed
+        self.setTextFormat(Qt.TextFormat.PlainText)
 
         # Store the original text
         self.original_text = text
 
+        # Set tooltip to show full text on hover
+        self.setToolTip(text)
+
+        # Adjust height based on content
+        self.adjustSize()
+
+        # Log the chip creation
+        logger.debug(f"Created chip for field: {text}")
+
     def update_style(self):
         """Update the style based on the theme mode."""
-        # Minimal styling for the chip
+        # Enhanced styling for the chip with better text handling
         self.setStyleSheet("""
             QLabel {
                 background-color: palette(highlight);
                 color: palette(highlightedText);
                 border-radius: 10px;
-                padding: 5px 10px;
-                margin: 2px;
+                padding: 6px 10px;
+                margin: 3px;
+                min-height: 20px;
+                max-height: 60px;
             }
         """)
 
@@ -64,28 +85,34 @@ class DraggableChip(QLabel):
 
 class ChipContainer(QFrame):
     """
-    A container for draggable chips.
+    A container for draggable chips that arranges them in a flowing layout.
     """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setAcceptDrops(True)
         self.update_style()
 
-        # Create a flow layout for the chips
-        self.layout = QHBoxLayout(self)
-        self.layout.setSpacing(5)
-        self.layout.setContentsMargins(10, 10, 10, 10)
-        self.layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        # Create a flow layout for the chips that wraps to the next line
+        self.layout = FlowLayout(self, margin=10, spacing=5)
 
         # Store the chips
         self.chips = []
 
+        # Set minimum height to ensure there's always space for chips
+        self.setMinimumHeight(100)
+
+        # Log container creation
+        logger.debug("Created chip container with flow layout")
+
     def update_style(self):
         """Update the style based on the theme mode."""
-        # Minimal styling for the container
+        # Enhanced styling for the container
         self.setStyleSheet("""
             ChipContainer {
-                min-height: 50px;
+                min-height: 100px;
+                border: 1px solid palette(mid);
+                border-radius: 5px;
+                background-color: palette(base);
             }
         """)
 
