@@ -100,10 +100,6 @@ class MainToolbar(QToolBar):
         self.convert_button = convert_btn
         self.addWidget(convert_btn)
 
-        # Add status label
-        self.status_label = QLabel("No file selected")
-        self.addWidget(self.status_label)
-
         # Add spacer to push items to the left and log button to the right
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)

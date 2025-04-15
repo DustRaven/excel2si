@@ -385,8 +385,7 @@ class MainWindow(QMainWindow):
                 self.selected_file = file_path
                 self.statusBar().showMessage(f"Selected file: {Path(file_path).name}")
 
-                # Update toolbar status label and button states
-                self.toolbar.status_label.setText(f"File: {Path(file_path).name}")
+                # Update button states
                 self.toolbar.set_file_selected(True)
 
                 # Load Excel headers for mapping
