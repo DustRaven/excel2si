@@ -153,11 +153,25 @@ class MappingWidget(QWidget):
             fields (list): List of field names
         """
         logger.info(f"Loading {len(fields)} source fields")
+
+        # Get current mapping before clearing chips
+        current_mapping = self.mapping_table.get_mapping()
+        mapped_fields = set(current_mapping.values())
+        logger.debug(f"Current mapping has {len(mapped_fields)} mapped fields")
+
+        # Clear existing chips
         self.source_container.clear_chips()
         self.hidden_chips = {}
+
+        # Add new chips and hide those that are already mapped
         for field in fields:
             chip = self.source_container.add_chip(field)
             self.hidden_chips[field] = chip
+
+            # Hide chip if it's already mapped
+            if field in mapped_fields:
+                chip.setVisible(False)
+                logger.debug(f"Kept chip hidden for already mapped field: {field}")
 
         # Update application state
         self.has_source_fields = len(fields) > 0
@@ -165,28 +179,38 @@ class MappingWidget(QWidget):
 
         logger.debug("Source fields loaded as chips")
 
-    def load_datatypes(self, datatypes_str):
+    def load_datatypes(self, datatypes):
         """
-        Load target fields and data types from a datatypes string.
+        Load target fields and data types from datatypes.
 
         Args:
-            datatypes_str (str): String representation of datatypes dictionary
+            datatypes: Dictionary or string representation of datatypes
         """
         logger.info("Loading datatypes")
         try:
-            # Extract field names and types using regex
-            pattern = r'"([^"]+)"\s*:\s*([^,\n\}]+)'  # Matches "field": type
-            matches = re.findall(pattern, datatypes_str)
+            # Handle different input types
+            if isinstance(datatypes, dict):
+                # If it's already a dictionary, use it directly
+                datatypes_dict = datatypes
+                logger.info(f"Found {len(datatypes_dict)} datatypes in dictionary")
+            elif isinstance(datatypes, str):
+                # If it's a string, extract field names and types using regex
+                pattern = r'"([^"]+)"\s*:\s*([^,\n\}]+)'  # Matches "field": type
+                matches = re.findall(pattern, datatypes)
 
-            if matches:
-                # Create a dictionary from the matches
-                datatypes_dict = {field: type_str.strip() for field, type_str in matches}
-                logger.info(f"Found {len(datatypes_dict)} datatypes")
-
-                # Load the datatypes into the mapping table
-                self.mapping_table.load_datatypes(datatypes_dict)
+                if matches:
+                    # Create a dictionary from the matches
+                    datatypes_dict = {field: type_str.strip() for field, type_str in matches}
+                    logger.info(f"Found {len(datatypes_dict)} datatypes from string")
+                else:
+                    logger.warning("No datatypes found in the string")
+                    return
             else:
-                logger.warning("No datatypes found in the file")
+                logger.warning(f"Unsupported datatypes format: {type(datatypes)}")
+                return
+
+            # Load the datatypes into the mapping table
+            self.mapping_table.load_datatypes(datatypes_dict)
         except Exception as e:
             logger.error(f"Error loading datatypes: {e}", exc_info=True)
 

@@ -26,6 +26,7 @@ def main():
     parser.add_argument('input_file', help="The path to the input CSV or Excel file")
     parser.add_argument('--output', '-o', help="The path to the output JSON file", nargs='?', const=None, type=str)
     parser.add_argument('--datatypes', '-d', help="File with datatypes in python object format", nargs='?', const=None, type=str)
+    parser.add_argument('--skiprows', '-s', help="Number of rows to skip from the beginning of the file", type=int, default=0)
     parser.add_argument('--debug', '-v', action='store_true', help="Print output to stdout")
     parser.add_argument(
         '--remove-nulls', '-n',
@@ -40,7 +41,7 @@ def main():
     # Determine output file path
     output_file = args.output
     if output_file is None:
-        filename, ext = os.path.splitext(args.input_file)
+        filename = os.path.splitext(args.input_file)[0]
         output_file = filename + ".json"
 
     # Debug output
@@ -73,7 +74,9 @@ def main():
             args.root,
             output_file,
             args.remove_nulls,
-            datatypes_file
+            datatypes_file,
+            None,  # field_mapping
+            args.skiprows
         )
     elif input_path.suffix.lower() in ['.csv']:
         # CSV file
@@ -82,7 +85,8 @@ def main():
             args.root,
             output_file,
             args.remove_nulls,
-            datatypes_file
+            datatypes_file,
+            args.skiprows
         )
     else:
         print(f"Error: Unsupported file format: {input_path.suffix}")

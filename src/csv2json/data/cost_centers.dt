@@ -1,9 +1,6 @@
-{
-    "displayName": "Kostenstellen",
-    "root": "cost_centers",
-    "fields": {
-        "company_id": str,
-        "nr": str,
-        "name": str
-    }
-}
+displayName: Kostenstellen
+root: cost_centers
+fields:
+  company_id: str
+  nr: str
+  name: str

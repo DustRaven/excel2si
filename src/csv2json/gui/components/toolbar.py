@@ -2,22 +2,22 @@
 Toolbar component for the CSV2JSON converter.
 """
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFontMetrics
+from PyQt6.QtCore import Qt, QSize, pyqtSignal
 from PyQt6.QtWidgets import (QToolBar, QPushButton, QComboBox, QCheckBox,
-                           QLabel, QWidget, QSizePolicy)
+                           QLabel, QWidget, QSizePolicy, QSpinBox)
+from PyQt6.QtGui import QFontMetrics
 import qtawesome as qta
-import os
 
 from src.csv2json.core.logging import logger
-from src.csv2json.data import get_datatype_files
-from src.csv2json.data import get_datatype_path
+from src.csv2json.data import get_datatype_files, get_datatype_info
 
 
 class MainToolbar(QToolBar):
     """
     Main toolbar for the CSV2JSON converter.
     """
+    # Signal emitted when skip rows value changes
+    skip_rows_changed = pyqtSignal(int)
     # Common button style
     BUTTON_STYLE = """
         QPushButton {
@@ -54,7 +54,6 @@ class MainToolbar(QToolBar):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.root_element_mapping = None
         self.setMovable(False)
         self.setFloatable(False)
 
@@ -62,7 +61,6 @@ class MainToolbar(QToolBar):
         self.has_file_selected = False
 
         # Set icon size to 24x24 pixels for sharper icons
-        from PyQt6.QtCore import QSize
         self.setIconSize(QSize(24, 24))
 
         # Create the root element selector
@@ -78,6 +76,18 @@ class MainToolbar(QToolBar):
         self.remove_nulls = QCheckBox("Remove Nulls")
         self.addWidget(self.remove_nulls)
 
+        # Add skip rows spinner
+        skip_rows_label = QLabel("Skip Rows:")
+        self.addWidget(skip_rows_label)
+
+        self.skip_rows_spinner = QSpinBox()
+        self.skip_rows_spinner.setMinimum(0)
+        self.skip_rows_spinner.setMaximum(100)  # Reasonable maximum
+        self.skip_rows_spinner.setValue(0)
+        self.skip_rows_spinner.setToolTip("Number of rows to skip from the beginning of the file")
+        self.skip_rows_spinner.valueChanged.connect(self.on_skip_rows_changed)
+        self.addWidget(self.skip_rows_spinner)
+
         # Add browse button with icon
         browse_btn = QPushButton()
         self.setup_button(browse_btn, 'fa6s.folder-open', "Browse for Excel File")
@@ -89,13 +99,6 @@ class MainToolbar(QToolBar):
         self.setup_button(convert_btn, 'fa6s.file-export', "Convert to JSON")
         self.convert_button = convert_btn
         self.addWidget(convert_btn)
-
-        # Add status label
-        self.status_label = QLabel("No file selected")
-        self.status_label.setMaximumWidth(300)
-        self.status_label.setTextFormat(Qt.TextFormat.PlainText)
-        self.status_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.addWidget(self.status_label)
 
         # Add spacer to push items to the left and log button to the right
         spacer = QWidget()
@@ -132,22 +135,15 @@ class MainToolbar(QToolBar):
         self.update_button_states()
         logger.debug(f"File selected state updated: {selected}")
 
-    def set_status_text(self, filename):
+    def on_skip_rows_changed(self, value):
         """
-        Set the status label text with elided filename if necessary.
+        Handle skip rows value change.
 
         Args:
-            filename (str): The filename to display
+            value (int): New skip rows value
         """
-        metrics = QFontMetrics(self.status_label.font())
-        elided_text = metrics.elidedText(
-            f"File: {filename}",
-            Qt.TextElideMode.ElideMiddle,
-            self.status_label.maximumWidth()
-        )
-        self.status_label.setText(elided_text)
-        # Set full filename as tooltip
-        self.status_label.setToolTip(f"File: {filename}")
+        logger.debug(f"Skip rows value changed to {value}")
+        self.skip_rows_changed.emit(value)
 
     def load_root_elements(self):
         """
@@ -157,26 +153,31 @@ class MainToolbar(QToolBar):
             # Get available datatype files
             datatype_files = get_datatype_files()
 
-            # Store mapping of display names to files
+            # Create a mapping of display names to root element names
             self.root_element_mapping = {}
 
-            # Extract display names and root elements
-            for file_stem in datatype_files:
-                dt_path = get_datatype_path(file_stem)
-                if not os.path.exists(dt_path):
-                    logger.warning(f"Datatype file not found: {dt_path}")
-                    continue
+            for file_path in datatype_files:
+                # Get datatype info from the file
+                info = get_datatype_info(file_path)
 
-                try:
-                    with open(dt_path) as f:
-                        data = eval(f.read())
-                        display_name = data.get("displayName", file_stem)
-                        root_element = data.get("root", file_stem)
-                        self.root_element_mapping[display_name] = root_element
-                except Exception as e:
-                    logger.warning(f"Error reading {file_stem}: {e}")
-                    display_name = file_stem
-                    self.root_element_mapping[display_name] = file_stem
+                # Extract the root element name (filename without extension)
+                from pathlib import Path
+                file_name = Path(file_path).stem
+
+                # If it's a _schema file, extract the base name
+                if file_name.endswith('_schema'):
+                    file_name = file_name[:-7]  # Remove '_schema' suffix
+
+                # Use displayName if available, otherwise use the file name
+                display_name = info.get('displayName', file_name)
+
+                # Use root if available, otherwise use the file name
+                root_name = info.get('root', file_name)
+
+                # Add to mapping
+                self.root_element_mapping[display_name] = root_name
+
+                logger.debug(f"Added root element mapping: {display_name} -> {root_name}")
 
             # Add to combo box
             self.root_combo.clear()

@@ -6,6 +6,7 @@ import json
 import io
 import os
 import pandas as pd
+import yaml
 from pathlib import Path
 
 from src.csv2json.core.logging import logger
@@ -63,24 +64,55 @@ def load_datatypes(file):
         file (str): Path to the datatypes file
 
     Returns:
-        str: String representation of datatypes
+        dict: Dictionary of datatypes
     """
     logger.info(f"Loading datatypes from: {file}")
     try:
-        with open(file, encoding='utf-8') as f:
-            data = eval(f.read())
+        file_path = Path(file)
+        with open(file_path, encoding='utf-8') as f:
+            content = f.read()
+
+            # Try to parse as YAML first (more secure)
+            try:
+                data = yaml.safe_load(content)
+            except Exception as yaml_error:
+                logger.debug(f"Could not parse as YAML: {yaml_error}")
+                # Fall back to eval for legacy format (less secure)
+                try:
+                    data = eval(content)
+
+                    # Convert Python types to strings for consistent handling
+                    if isinstance(data, dict) and 'fields' in data and isinstance(data['fields'], dict):
+                        for key, value in data['fields'].items():
+                            if isinstance(value, type):
+                                data['fields'][key] = value.__name__
+                except Exception as eval_error:
+                    logger.error(f"Could not parse file content: {eval_error}")
+                    raise
+
+            # Extract fields from the data structure
             if isinstance(data, dict) and 'fields' in data:
                 datatypes = data['fields']
             else:
                 datatypes = data
-            logger.debug(f"Loaded datatypes: {datatypes[:100]}...")
+
+            # Safely log a preview of the datatypes
+            if isinstance(datatypes, dict):
+                preview = str(list(datatypes.keys())[:10])
+                logger.debug(f"Loaded datatypes with keys: {preview}...")
+            elif isinstance(datatypes, list):
+                preview = str(datatypes[:10])
+                logger.debug(f"Loaded datatypes (list): {preview}...")
+            else:
+                logger.debug(f"Loaded datatypes of type: {type(datatypes)}")
+
             return datatypes
     except Exception as e:
         logger.error(f"Error loading datatypes: {e}")
         raise
 
 
-def excel_to_json(excel_path, root_element, output_path=None, remove_nulls=False, datatypes_file=None, field_mapping=None):
+def excel_to_json(excel_path, root_element, output_path=None, remove_nulls=False, datatypes_file=None, field_mapping=None, skiprows=0):
     """
     Convert Excel file to JSON.
 
@@ -91,6 +123,7 @@ def excel_to_json(excel_path, root_element, output_path=None, remove_nulls=False
         remove_nulls (bool, optional): Whether to remove null values. Defaults to False.
         datatypes_file (str, optional): Path to datatypes file. Defaults to None.
         field_mapping (dict, optional): Mapping from target fields to source fields. Defaults to None.
+        skiprows (int, optional): Number of rows to skip from the beginning of the file. Defaults to 0.
 
     Returns:
         str: Path to the output JSON file
@@ -106,8 +139,8 @@ def excel_to_json(excel_path, root_element, output_path=None, remove_nulls=False
 
     try:
         # Read Excel file
-        logger.info("Reading Excel file...")
-        df = pd.read_excel(excel_path)
+        logger.info(f"Reading Excel file (skipping {skiprows} rows)...")
+        df = pd.read_excel(excel_path, skiprows=skiprows)
         logger.info(f"Excel file read successfully. Shape: {df.shape}")
 
         # Apply field mapping if provided
@@ -180,20 +213,22 @@ def excel_to_json(excel_path, root_element, output_path=None, remove_nulls=False
         raise
 
 
-def get_excel_headers(excel_path):
+def get_excel_headers(excel_path, skiprows=0):
     """
     Get the column headers from an Excel file.
 
     Args:
         excel_path (str): Path to the Excel file
+        skiprows (int, optional): Number of rows to skip from the beginning of the file. Defaults to 0.
 
     Returns:
-        list: List of column headers
+        list: List of column headers as strings
     """
-    logger.info(f"Getting headers from Excel file: {excel_path}")
+    logger.info(f"Getting headers from Excel file: {excel_path} (skipping {skiprows} rows)")
     try:
-        df = pd.read_excel(excel_path)
-        headers = list(df.columns)
+        df = pd.read_excel(excel_path, skiprows=skiprows)
+        # Convert all headers to strings to avoid type issues when creating QLabel widgets
+        headers = [str(col) for col in df.columns]
         logger.info(f"Found {len(headers)} headers: {headers[:10]}...")
         return headers
     except Exception as e:
@@ -201,7 +236,7 @@ def get_excel_headers(excel_path):
         return []
 
 
-def csv_to_json(csv_path, root_element, output_path=None, remove_nulls=False, datatypes_file=None):
+def csv_to_json(csv_path, root_element, output_path=None, remove_nulls=False, datatypes_file=None, skiprows=0):
     """
     Convert CSV file to JSON.
 
@@ -211,6 +246,7 @@ def csv_to_json(csv_path, root_element, output_path=None, remove_nulls=False, da
         output_path (str, optional): Path to save the JSON file. If None, uses the same path as csv_path with .json extension.
         remove_nulls (bool, optional): Whether to remove null values. Defaults to False.
         datatypes_file (str, optional): Path to datatypes file. Defaults to None.
+        skiprows (int, optional): Number of rows to skip from the beginning of the file. Defaults to 0.
 
     Returns:
         str: Path to the output JSON file
@@ -239,13 +275,13 @@ def csv_to_json(csv_path, root_element, output_path=None, remove_nulls=False, da
                 logger.error(f"Could not load datatypes: {dt_error}")
 
         # Read CSV file
-        logger.info("Reading CSV file...")
+        logger.info(f"Reading CSV file (skipping {skiprows} rows)...")
         if datatypes:
             logger.debug("Reading CSV with datatypes...")
-            df = pd.read_csv(csv_path, sep=";", engine="c", dtype=datatypes, decimal=',')
+            df = pd.read_csv(csv_path, sep=";", engine="c", dtype=datatypes, decimal=',', skiprows=skiprows)
         else:
             logger.debug("Reading CSV without datatypes...")
-            df = pd.read_csv(csv_path, sep=";", engine="c", decimal=',')
+            df = pd.read_csv(csv_path, sep=";", engine="c", decimal=',', skiprows=skiprows)
         logger.info(f"CSV file read successfully. Shape: {df.shape}")
 
         # Convert to JSON with nested structure

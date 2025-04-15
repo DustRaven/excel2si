@@ -6,6 +6,8 @@ import os
 import sys
 import glob
 import logging
+import yaml
+from pathlib import Path
 
 # Get logger
 logger = logging.getLogger('csv2json')
@@ -52,11 +54,11 @@ def get_datatype_files():
     Get a list of all available datatype files.
 
     Returns:
-        list: List of datatype file names without extension
+        list: List of datatype file paths
     """
     dt_files = []
 
-    # Try multiple locations to find .dt files
+    # Try multiple locations to find schema files
     search_paths = [DATA_DIR]
 
     # Add project root for development
@@ -69,26 +71,69 @@ def get_datatype_files():
         search_paths.append(os.path.join(EXE_DIR, 'csv2json', 'data'))
         search_paths.append(os.path.join(EXE_DIR, 'data'))
 
-    # Search all paths for .dt files
+    # Search all paths for schema files (.dt, .yaml, .yml)
     for path in search_paths:
         try:
             if os.path.exists(path):
-                # Use glob to find all .dt files in the directory
+                # Use glob to find all schema files in the directory
                 dt_path_files = glob.glob(os.path.join(path, '*.dt'))
-                logger.info(f"Found {len(dt_path_files)} .dt files in {path}: {dt_path_files}")
-                # Extract filenames without extension
-                dt_files.extend([os.path.basename(f)[:-3] for f in dt_path_files])
+                yaml_path_files = glob.glob(os.path.join(path, '*.yaml'))
+                yml_path_files = glob.glob(os.path.join(path, '*.yml'))
+
+                # Combine all file types
+                all_files = dt_path_files + yaml_path_files + yml_path_files
+
+                logger.info(f"Found {len(all_files)} schema files in {path}: {all_files}")
+                # Add full paths to the list
+                dt_files.extend(all_files)
         except Exception as e:
-            logger.error(f"Error searching for .dt files in {path}: {e}", exc_info=True)
+            logger.error(f"Error searching for schema files in {path}: {e}", exc_info=True)
 
     # Remove duplicates while preserving order
     unique_dt_files = []
+    seen_names = set()
     for f in dt_files:
-        if f not in unique_dt_files:
+        # Get the root name (without path or extension)
+        file_path = Path(f)
+        name = file_path.stem
+
+        if name not in seen_names:
+            seen_names.add(name)
             unique_dt_files.append(f)
 
-    logger.info(f"Found unique .dt files: {unique_dt_files}")
+    logger.info(f"Found {len(unique_dt_files)} unique schema files")
     return unique_dt_files
+
+def get_datatype_info(file_path):
+    """
+    Get information from a datatype file.
+
+    Args:
+        file_path (str): Path to the datatype file
+
+    Returns:
+        dict: Dictionary with datatype information
+    """
+    try:
+        path = Path(file_path)
+        with open(path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+            # Try to parse as YAML first (more secure)
+            try:
+                data = yaml.safe_load(content)
+            except Exception as yaml_error:
+                logger.debug(f"Could not parse as YAML: {yaml_error}")
+                # Fall back to eval for legacy format (less secure)
+                try:
+                    data = eval(content)
+                except Exception as eval_error:
+                    logger.error(f"Could not parse file content: {eval_error}")
+                    return {}
+            return data
+    except Exception as e:
+        logger.error(f"Error reading datatype file {file_path}: {e}", exc_info=True)
+        return {}
 
 def get_datatype_path(name):
     """
@@ -100,7 +145,7 @@ def get_datatype_path(name):
     Returns:
         str: Full path to the datatype file
     """
-    # Try multiple locations to find the specific .dt file
+    # Try multiple locations to find the schema file
     search_paths = [DATA_DIR]
 
     # Add project root for development
@@ -113,16 +158,26 @@ def get_datatype_path(name):
         search_paths.append(os.path.join(EXE_DIR, 'csv2json', 'data'))
         search_paths.append(os.path.join(EXE_DIR, 'data'))
 
-    # Search all paths for the specific .dt file
+    # Search all paths for the schema file in different formats
     for path in search_paths:
         try:
-            file_path = os.path.join(path, f"{name}.dt")
-            if os.path.exists(file_path):
-                return file_path
+            # Check for .dt files first (preferred format)
+            dt_path = os.path.join(path, f"{name}.dt")
+            if os.path.exists(dt_path):
+                return dt_path
+
+            # Then check for YAML files
+            yaml_path = os.path.join(path, f"{name}.yaml")
+            if os.path.exists(yaml_path):
+                return yaml_path
+
+            yml_path = os.path.join(path, f"{name}.yml")
+            if os.path.exists(yml_path):
+                return yml_path
         except Exception as e:
-            logger.error(f"Error checking for {name}.dt in {path}: {e}", exc_info=True)
+            logger.error(f"Error checking for {name} schema files in {path}: {e}", exc_info=True)
 
     # If not found anywhere, return the default path (it will be checked for existence later)
     default_path = os.path.join(DATA_DIR, f"{name}.dt")
-    logger.warning(f"Could not find {name}.dt in any search path. Using default path: {default_path}")
+    logger.warning(f"Could not find schema file for {name} in any search path. Using default path: {default_path}")
     return default_path
