@@ -1,8 +1,12 @@
 {
-	"company_id": str,
-    "id": str,
-    "percentage": float,
-    "name": str,
-	"tax_category_1": str,
-	"tax_category_2": str
+    "displayName": "Steuerschlüssel",
+    "root": "tax_codes",
+    "fields": {
+        "company_id": str,
+        "id": str,
+        "percentage": float,
+        "name": str,
+        "tax_category_1": str,
+        "tax_category_2": str
+    }
 }

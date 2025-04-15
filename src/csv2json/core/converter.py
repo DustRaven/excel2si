@@ -68,9 +68,11 @@ def load_datatypes(file):
     logger.info(f"Loading datatypes from: {file}")
     try:
         with open(file, encoding='utf-8') as f:
-            lines = f.readlines()
-            datatypes = [line.strip() for line in lines]
-            datatypes = "".join(datatypes)
+            data = eval(f.read())
+            if isinstance(data, dict) and 'fields' in data:
+                datatypes = data['fields']
+            else:
+                datatypes = data
             logger.debug(f"Loaded datatypes: {datatypes[:100]}...")
             return datatypes
     except Exception as e:

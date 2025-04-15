@@ -4,7 +4,7 @@ PyQt6>=6.5.0
 openpyxl>=3.1.2
 
 # Icons
-pytablericons>=1.0.1
+qtawesome>=1.4.0
 
 # Packaging
 pyinstaller>=5.13.0

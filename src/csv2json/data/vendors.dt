@@ -1,14 +1,18 @@
 {
-      "company_id": str,
-      "id": str,
-      "name": str,
-      "address": str,
-      "city": str,
-      "zip_code": str,
-	  "country": str,
-      "email": str,
-      "vat_id": str,
-      "registration_id": str,
-      "payment_terms_id": str,
-      "tax_category_1": str
+    "displayName": "Kreditoren",
+    "root": "vendors",
+    "fields": {
+        "company_id": str,
+        "id": str,
+        "name": str,
+        "address": str,
+        "city": str,
+        "zip_code": str,
+        "country": str,
+        "email": str,
+        "vat_id": str,
+        "registration_id": str,
+        "payment_terms_id": str,
+        "tax_category_1": str
+    }
 }

@@ -1,7 +1,11 @@
 {
-    "company_id": str,
-    "id": str,
-    "net_days": int,
-    "cashback_days1": int,
-    "cashback_percentage1": float
+    "displayName": "Zahlungsbedingungen",
+    "root": "payment_terms",
+    "fields": {
+        "company_id": str,
+        "id": str,
+        "net_days": int,
+        "cashback_days1": int,
+        "cashback_percentage1": float
+    }
 }

@@ -1,5 +1,9 @@
 {
-    "company_id": str,
-    "nr": str,
-    "name": str
+    "displayName": "Sachkonten",
+    "root": "gl_accounts",
+    "fields": {
+        "company_id": str,
+        "nr": str,
+        "name": str
+    }
 }

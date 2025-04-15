@@ -9,7 +9,6 @@ from pathlib import Path
 
 from PyQt6.QtWidgets import (QMainWindow, QVBoxLayout, QWidget, QFileDialog,
                            QMessageBox, QApplication)
-from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
 
 # Try to import with or without 'src' prefix
@@ -40,6 +39,23 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("CSV2JSON Converter")
         self.setMinimumSize(800, 600)
         self.setAcceptDrops(True)  # Enable drops for the main window
+
+        self.is_dragging = False
+        self.drop_overlay = QWidget(self)
+        self.drop_overlay.setGeometry(self.rect())
+        self.drop_overlay.setStyleSheet("""
+            QWidget {
+                background-color: palette(highlight);
+                border: 2px dashed palette(dark);
+                border-radius: 5px;
+                opacity: 0.2;
+            }
+        """)
+        self.drop_overlay.hide()
+
+        self.resizeEvent = lambda e: self.drop_overlay.setGeometry(
+            self.centralWidget().geometry()
+        )
 
         # Determine if we're running in a PyInstaller bundle
         def is_bundled():
@@ -175,7 +191,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Selected file: {Path(file_path).name}")
 
             # Update toolbar status label and button states
-            self.toolbar.status_label.setText(f"File: {Path(file_path).name}")
+            self.toolbar.set_status_text(Path(file_path).name)
             self.toolbar.set_file_selected(True)
 
             # Load Excel headers for mapping
@@ -241,8 +257,9 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Processing {Path(excel_path).name}...")
             QApplication.processEvents()  # Update UI
 
-            # Get selected root element
-            root = self.toolbar.root_combo.currentText()
+            # Get selected display name and corresponding root element
+            display_name = self.toolbar.root_combo.currentText()
+            root = self.toolbar.root_element_mapping[display_name]
             remove_nulls = self.toolbar.remove_nulls.isChecked()
             logger.info(f"Using root element: {root}, remove_nulls: {remove_nulls}")
 
@@ -295,10 +312,15 @@ class MainWindow(QMainWindow):
         Args:
             index (int, optional): Index of the selected root element. Defaults to None.
         """
-        # Get the selected root element
-        root = self.toolbar.root_combo.currentText()
-        if not root:
+        # Get the selected display name and corresponding root element
+        display_name = self.toolbar.root_combo.currentText()
+        if not display_name:
             logger.warning("No root element selected")
+            return
+
+        root = self.toolbar.root_element_mapping.get(display_name)
+        if not root:
+            logger.warning(f"No root element found for display name: {display_name}")
             return
 
         logger.info(f"Loading datatypes for root element: {root}")
@@ -312,7 +334,14 @@ class MainWindow(QMainWindow):
         # Load datatypes
         try:
             from src.csv2json.core.converter import load_datatypes
-            datatypes_str = load_datatypes(datatypes_file)
+            with open(datatypes_file) as f:
+                data = eval(f.read())
+            fields_dict = {
+                field: str(type_).split("'")[1]
+                for field, type_ in data['fields'].items()
+            }
+            import json
+            datatypes_str = json.dumps(fields_dict)
             logger.debug(f"Loaded datatypes from: {datatypes_file}")
 
             # Pass the raw string to the mapping widget
@@ -330,6 +359,14 @@ class MainWindow(QMainWindow):
         log_viewer.exec()
         logger.info("Log viewer closed")
 
+    def dragLeaveEvent(self, event):
+        """
+        Handle drag leave event.
+        """
+        self.is_dragging = False
+        self.drop_overlay.hide()
+        event.accept()
+
     def dragEnterEvent(self, event):
         """
         Handle drag enter events.
@@ -338,17 +375,23 @@ class MainWindow(QMainWindow):
             # Check if the dragged file is an Excel file
             urls = event.mimeData().urls()
             if urls and urls[0].toLocalFile().lower().endswith(('.xlsx', '.xls')):
-                event.acceptProposedAction()
                 logger.debug("Drag enter event accepted for Excel file")
+                self.is_dragging = True
+                self.drop_overlay.show()
+                event.acceptProposedAction()
             else:
                 logger.debug("Drag enter event rejected (not an Excel file)")
+                event.ignore()
         else:
             logger.debug("Drag enter event rejected (no URLs)")
+            event.ignore()
 
     def dropEvent(self, event):
         """
         Handle drop events.
         """
+        self.is_dragging = False
+        self.drop_overlay.hide()
         if event.mimeData().hasUrls():
             # Get the first URL (we only support one file at a time)
             url = event.mimeData().urls()[0]
@@ -360,7 +403,7 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage(f"Selected file: {Path(file_path).name}")
 
                 # Update toolbar status label and button states
-                self.toolbar.status_label.setText(f"File: {Path(file_path).name}")
+                self.toolbar.set_status_text(Path(file_path).name)
                 self.toolbar.set_file_selected(True)
 
                 # Load Excel headers for mapping

@@ -2,14 +2,16 @@
 Toolbar component for the CSV2JSON converter.
 """
 
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFontMetrics
 from PyQt6.QtWidgets import (QToolBar, QPushButton, QComboBox, QCheckBox,
                            QLabel, QWidget, QSizePolicy)
-from PyQt6.QtGui import QIcon
-# Use qtawesome instead of pytablericons
 import qtawesome as qta
+import os
 
 from src.csv2json.core.logging import logger
 from src.csv2json.data import get_datatype_files
+from src.csv2json.data import get_datatype_path
 
 
 class MainToolbar(QToolBar):
@@ -52,6 +54,7 @@ class MainToolbar(QToolBar):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.root_element_mapping = None
         self.setMovable(False)
         self.setFloatable(False)
 
@@ -89,6 +92,9 @@ class MainToolbar(QToolBar):
 
         # Add status label
         self.status_label = QLabel("No file selected")
+        self.status_label.setMaximumWidth(300)
+        self.status_label.setTextFormat(Qt.TextFormat.PlainText)
+        self.status_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.addWidget(self.status_label)
 
         # Add spacer to push items to the left and log button to the right
@@ -126,6 +132,23 @@ class MainToolbar(QToolBar):
         self.update_button_states()
         logger.debug(f"File selected state updated: {selected}")
 
+    def set_status_text(self, filename):
+        """
+        Set the status label text with elided filename if necessary.
+
+        Args:
+            filename (str): The filename to display
+        """
+        metrics = QFontMetrics(self.status_label.font())
+        elided_text = metrics.elidedText(
+            f"File: {filename}",
+            Qt.TextElideMode.ElideMiddle,
+            self.status_label.maximumWidth()
+        )
+        self.status_label.setText(elided_text)
+        # Set full filename as tooltip
+        self.status_label.setToolTip(f"File: {filename}")
+
     def load_root_elements(self):
         """
         Load available root elements from datatype files.
@@ -134,21 +157,31 @@ class MainToolbar(QToolBar):
             # Get available datatype files
             datatype_files = get_datatype_files()
 
-            # Extract root element names (file names without extension)
-            root_elements = []
-            for file in datatype_files:
-                # Handle both Path objects and strings
-                if hasattr(file, 'stem'):
-                    root_elements.append(file.stem)
-                else:
-                    # If it's a string, extract the filename without extension
-                    import os
-                    root_elements.append(os.path.splitext(os.path.basename(file))[0])
+            # Store mapping of display names to files
+            self.root_element_mapping = {}
+
+            # Extract display names and root elements
+            for file_stem in datatype_files:
+                dt_path = get_datatype_path(file_stem)
+                if not os.path.exists(dt_path):
+                    logger.warning(f"Datatype file not found: {dt_path}")
+                    continue
+
+                try:
+                    with open(dt_path) as f:
+                        data = eval(f.read())
+                        display_name = data.get("displayName", file_stem)
+                        root_element = data.get("root", file_stem)
+                        self.root_element_mapping[display_name] = root_element
+                except Exception as e:
+                    logger.warning(f"Error reading {file_stem}: {e}")
+                    display_name = file_stem
+                    self.root_element_mapping[display_name] = file_stem
 
             # Add to combo box
             self.root_combo.clear()
-            self.root_combo.addItems(root_elements)
+            self.root_combo.addItems(sorted(self.root_element_mapping.keys()))
 
-            logger.info(f"Loaded {len(root_elements)} root elements")
+            logger.info(f"Loaded {len(self.root_element_mapping)} root elements")
         except Exception as e:
             logger.error(f"Error loading root elements: {e}", exc_info=True)
