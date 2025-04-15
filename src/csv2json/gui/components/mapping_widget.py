@@ -153,11 +153,25 @@ class MappingWidget(QWidget):
             fields (list): List of field names
         """
         logger.info(f"Loading {len(fields)} source fields")
+
+        # Get current mapping before clearing chips
+        current_mapping = self.mapping_table.get_mapping()
+        mapped_fields = set(current_mapping.values())
+        logger.debug(f"Current mapping has {len(mapped_fields)} mapped fields")
+
+        # Clear existing chips
         self.source_container.clear_chips()
         self.hidden_chips = {}
+
+        # Add new chips and hide those that are already mapped
         for field in fields:
             chip = self.source_container.add_chip(field)
             self.hidden_chips[field] = chip
+
+            # Hide chip if it's already mapped
+            if field in mapped_fields:
+                chip.setVisible(False)
+                logger.debug(f"Kept chip hidden for already mapped field: {field}")
 
         # Update application state
         self.has_source_fields = len(fields) > 0
