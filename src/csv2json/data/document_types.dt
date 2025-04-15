@@ -1,10 +1,7 @@
-{
-    "displayName": "Belegarten",
-    "root": "document_types",
-    "fields": {
-        "company_id": str,
-        "id": str,
-        "name": str,
-        "credit_note": bool
-    }
-}
+displayName: Belegarten
+root: document_types
+fields:
+  company_id: str
+  id: str
+  name: str
+  credit_note: bool

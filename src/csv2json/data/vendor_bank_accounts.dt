@@ -1,11 +1,8 @@
-{
-    "displayName": "Kreditor Bankkonten",
-    "root": "vendor_bank_accounts",
-    "fields": {
-        "company_id": str,
-        "vendor_id": str,
-        "iban": str,
-        "bic": str,
-        "primary": bool
-    }
-}
+displayName: Kreditor Bankkonten
+root: vendor_bank_accounts
+fields:
+  company_id: str
+  vendor_id: str
+  iban: str
+  bic: str
+  primary: bool

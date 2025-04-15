@@ -3,7 +3,7 @@ Draggable chips component for the CSV2JSON converter.
 """
 
 from PyQt6.QtWidgets import QLabel, QFrame, QHBoxLayout, QSizePolicy
-from PyQt6.QtCore import Qt, QMimeData, pyqtSignal
+from PyQt6.QtCore import Qt, QMimeData
 from PyQt6.QtGui import QDrag
 
 from src.csv2json.core.logging import logger

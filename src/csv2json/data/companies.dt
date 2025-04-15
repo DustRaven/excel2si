@@ -1,14 +1,11 @@
-{
-    "displayName": "Mandanten",
-    "root": "companies",
-    "fields": {
-          "id": str,
-          "name": str,
-          "parent_id": int,
-          "address": str,
-          "city": str,
-          "zip_code": str,
-          "local_currency": str,
-          "country": str
-    }
-}
+displayName: Mandanten
+root: companies
+fields:
+  id: str
+  name: str
+  parent_id: int
+  address: str
+  city: str
+  zip_code: str
+  local_currency: str
+  country: str

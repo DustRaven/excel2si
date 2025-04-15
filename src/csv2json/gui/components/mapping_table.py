@@ -2,7 +2,7 @@
 Mapping table component for the CSV2JSON converter.
 """
 
-from PyQt6.QtWidgets import (QTableWidget, QTableWidgetItem, QHeaderView, 
+from PyQt6.QtWidgets import (QTableWidget, QTableWidgetItem, QHeaderView,
                            QAbstractItemView, QMenu)
 from PyQt6.QtCore import Qt, pyqtSignal
 
@@ -72,8 +72,12 @@ class MappingTable(QTableWidget):
             field_item = QTableWidgetItem(field)
             self.setItem(i, 0, field_item)
 
-            # Data type
-            dtype_item = QTableWidgetItem(str(dtype))
+            # Data type - format it nicely
+            dtype_str = str(dtype)
+            if dtype_str.startswith("<class '") and dtype_str.endswith("'>"):
+                # Extract the type name from the class representation
+                dtype_str = dtype_str[8:-2].split('.')[-1]
+            dtype_item = QTableWidgetItem(dtype_str)
             self.setItem(i, 1, dtype_item)
 
             # Source field (empty initially)

@@ -16,19 +16,20 @@ class FileService:
     """
 
     @staticmethod
-    def get_excel_headers(excel_path):
+    def get_excel_headers(excel_path, skiprows=0):
         """
         Get the column headers from an Excel file.
 
         Args:
             excel_path (str): Path to the Excel file
+            skiprows (int, optional): Number of rows to skip from the beginning of the file. Defaults to 0.
 
         Returns:
             list: List of column headers
         """
-        logger.info(f"Getting headers from Excel file: {excel_path}")
+        logger.info(f"Getting headers from Excel file: {excel_path} (skipping {skiprows} rows)")
         try:
-            df = pd.read_excel(excel_path)
+            df = pd.read_excel(excel_path, skiprows=skiprows)
             headers = list(df.columns)
             logger.info(f"Found {len(headers)} headers: {headers[:10]}...")
             return headers

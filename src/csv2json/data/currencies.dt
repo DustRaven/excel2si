@@ -1,10 +1,7 @@
-{
-    "displayName": "Währungen",
-    "root": "currencies",
-    "fields": {
-        "company_id": str,
-        "id": str,
-        "name": str,
-        "code": str
-    }
-}
+displayName: Währungen
+root: currencies
+fields:
+  company_id: str
+  id: str
+  name: str
+  code: str
