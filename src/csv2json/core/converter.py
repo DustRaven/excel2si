@@ -163,32 +163,37 @@ def excel_to_json(excel_path, root_element, output_path=None, remove_nulls=False
             else:
                 logger.warning("No fields were mapped. Using original DataFrame.")
 
-        # Convert to CSV
-        logger.debug("Converting DataFrame to CSV...")
-        csv_data = df.to_csv(index=False, sep=';')
-
         # Try to load datatypes if available
         datatypes = None
         if datatypes_file:
             logger.info(f"Using datatypes file: {datatypes_file}")
             try:
                 if os.path.exists(datatypes_file):
-                    datatypes = eval(load_datatypes(datatypes_file))
+                    datatypes = load_datatypes(datatypes_file)
                     logger.debug(f"Datatypes loaded: {list(datatypes.keys())[:5]}...")
                 else:
                     logger.warning(f"Datatypes file not found: {datatypes_file}")
             except Exception as dt_error:
                 logger.error(f"Could not load datatypes: {dt_error}")
 
-        # Process CSV data
-        logger.debug("Processing CSV data...")
-        csv_buffer = io.StringIO(csv_data)
+        # Apply datatypes directly to the DataFrame if available
         if datatypes:
-            logger.debug("Reading CSV with datatypes...")
-            df = pd.read_csv(csv_buffer, sep=";", engine="c", dtype=datatypes, decimal=',')
+            logger.info("Applying datatypes directly to the DataFrame...")
+            for col, dtype in datatypes.items():
+                if col in df.columns:
+                    try:
+                        # Attempt to convert columns with potential comma decimals to numeric first
+                        if pd.api.types.is_string_dtype(df[col]) and (dtype == 'float' or dtype == 'int'):
+                             # Replace comma with period for decimal conversion
+                            df[col] = pd.to_numeric(df[col].str.replace(',', '.', regex=False), errors='coerce')
+                        df[col] = df[col].astype(dtype)
+                        logger.debug(f"Applied dtype '{dtype}' to column '{col}'.")
+                    except Exception as e:
+                        logger.warning(f"Could not apply dtype '{dtype}' to column '{col}': {e}")
+                else:
+                    logger.warning(f"Datatype specified for column '{col}' but column not found in DataFrame.")
         else:
-            logger.debug("Reading CSV without datatypes...")
-            df = pd.read_csv(csv_buffer, sep=";", engine="c", decimal=',')
+            logger.info("No datatypes provided or loaded, skipping direct datatype application.")
 
         # Convert to JSON with nested structure
         logger.info("Converting to JSON with nested structure...")
@@ -267,7 +272,7 @@ def csv_to_json(csv_path, root_element, output_path=None, remove_nulls=False, da
             logger.info(f"Using datatypes file: {datatypes_file}")
             try:
                 if os.path.exists(datatypes_file):
-                    datatypes = eval(load_datatypes(datatypes_file))
+                    datatypes = load_datatypes(datatypes_file)
                     logger.debug(f"Datatypes loaded: {list(datatypes.keys())[:5]}...")
                 else:
                     logger.warning(f"Datatypes file not found: {datatypes_file}")

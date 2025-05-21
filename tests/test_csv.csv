@@ -1,0 +1,4 @@
+column_a;column_b;column_c;column_d;column_e;numeric_with_comma
+text1;10;1.1;not_an_int;True;10,5
+text2;20;2.2;200;false;20,0
+text3;30;3.3;another_text;TRUE;30,33

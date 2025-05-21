@@ -1,0 +1,7 @@
+fields:
+  column_a: str
+  column_b: int
+  column_c: float
+  column_d: str # For testing type conversion warnings (e.g. text to int)
+  column_e: bool # For boolean conversion
+  numeric_with_comma: float # For testing comma decimal conversion
